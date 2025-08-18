@@ -77,7 +77,7 @@ const Login = () => {
         item
         xs={12}
         sm={5}
-        md={5}
+        md={6}
         sx={{
 
           backgroundImage: `url(${backgroundimage})`,
@@ -128,8 +128,7 @@ const Login = () => {
       <Grid
         item
         xs={12}
-        sm={7}
-        md={7}
+        md={6}
         square
         sx={{
           display: "flex",
@@ -193,7 +192,7 @@ const Login = () => {
                 alignItems: "flex-start",
                 m: 0,
                 p: 0,
-                mr: "70px",
+                mr: "100px",
               }}
             >
               <Typography variant="h5" fontWeight="bold" color="#192C4D" sx={{ m: 0, p: 0 }}>

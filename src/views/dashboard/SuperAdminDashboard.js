@@ -190,6 +190,8 @@ const Dashboard = () => {
         latitude: project.latitude,
         address: project.address,
         connected_gateways: project.connected_gateways || [],
+        admin: selectedAdmin.username,
+        user: project.user_firstname,
       },
     })
   }
@@ -251,7 +253,7 @@ const Dashboard = () => {
 
         {selectedAdmin && (
           <Box mt={4}>
-            <Button variant="outlined" onClick={() => setSelectedAdmin(null)} sx={{ mb: 2 }}>← Back to Admin List</Button>
+         
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>

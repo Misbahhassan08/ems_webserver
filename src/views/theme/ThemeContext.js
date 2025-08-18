@@ -30,8 +30,8 @@ export const ThemeContextProvider = ({ children }) => {
                 },
                 background: {
                   default: "#ffffff",
-                  paper: "#f5f5f5",
-                  sidebar:"#1D1D1E",
+                  paper: "#ffffff",
+                  sidebar:"#1F2A40",
                   create: "#f5f5f5",
                   footer: "#212631",
                   card:"rgba(196, 196, 219, 0.94)",
@@ -58,9 +58,9 @@ export const ThemeContextProvider = ({ children }) => {
                   main: "#90caf9",
                 },
                 background: {
-                  default: "#1A2035", // Dark background color
-                  paper: "#2B344A", // Table or card background color
-                  sidebar:"#2B344A",
+                  default: "#141B2D", // Dark background color
+                  paper: "#141B2D", // Table or card background color
+                  sidebar:"#1F2A40",
                   create: "rgb(53, 68, 107)",
                   footer: "#212631", 
                   card:"rgba(95, 95, 106, 0.89)",

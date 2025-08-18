@@ -45,6 +45,8 @@ const ProjectData = () => {
     latitude,
     address,
     connected_gateways = [],
+    admin,
+    user,
   } = location.state || {};
 
 
@@ -59,8 +61,10 @@ const ProjectData = () => {
   const [role, setRole] = useState('');
   const [totalgrid, setTotalgrid] = useState('0');
   const [totalsolar, setTotalsolar] = useState('0');
-  const [totalgenset, setTotalgenset] = useState('0');
+  const [totalgenset, setTotalGenset] = useState('0');
   const [totalgridexport, setTotalgridexport] = useState('0');
+  const [lastUpdateTime, setLastUpdateTime] = useState(null)
+
   useEffect(() => {
     // Retrieve user data from localStorage
     const user = JSON.parse(localStorage.getItem('user'));
@@ -74,6 +78,7 @@ const ProjectData = () => {
       try {
         const response = await axios.get(urls.userAlotedGatewaysCount);
         setUserAlotedGatewaysCount(response.data.user_aloted_count || 0);
+        setLastUpdateTime(dayjs())
       } catch (error) {
         console.error('Error in fetching user aloted gateways count', error);
       }
@@ -177,7 +182,9 @@ const ProjectData = () => {
       state: {
         gateway,         // full gateway object
         projectId,       // also passing projectId or any other needed data
-        projectName
+        projectName,
+        user,
+        admin,
       }
     });
   };
@@ -189,22 +196,34 @@ const ProjectData = () => {
       <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         {/* Left Side: Project Name and Welcome Message */}
         <Box>
-          <Typography variant="h4" >
-            {capitalize(projectName)}
-          </Typography>
-          <Typography variant="body1" >
-            Welcome to Project {projectName}
-          </Typography>
+          
         </Box>
 
         {/* Right Side: Last Update */}
-        <Box>
-          <Typography variant="body1"
-            color="text.secondary">
-            Last update: {dayjs().format("YYYY-MM-DD HH:mm")}
-          </Typography>
-        </Box>
+{lastUpdateTime && (
+  <Box 
+    display="flex" 
+    justifyContent="space-between"   // left & right
+    alignItems="center" 
+    margin="0 1rem"
+  >
+    {/* Left Side */}
+    {role === "superadmin" && (
+      <Typography variant="body2" color="text.primary" marginRight={70} sx={{ fontWeight: "bold", fontSize: "1.8rem" }}>
+        {admin} | {user} | {projectName}
+      </Typography>
+    )}
+
+    {/* Right Side */}
+    <Typography variant="body2" color="text.primary">
+      {`Last Update: ${lastUpdateTime.format('YYYY-MM-DD HH:mm:ss')}`}
+    </Typography>
+  </Box>
+)}
+
+
       </Box>
+
 
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>

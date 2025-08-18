@@ -69,7 +69,7 @@ import ProjectChartBar from './PMGraphs/ProjectChartBar'
 import GatewayEnergyPerDay from './PMGraphs/GatewayEnergyPerDay'
 import CircularNode from "../dashboard/project_node";
 import SecondAnimatedSVGEdge from "../dashboard/animatedSVG";
-
+import dayjs from 'dayjs'
 
 import solar from '../../assets/images/solar-panel .svg'
 import panel2 from '../../assets/images/panel2.svg'
@@ -128,6 +128,8 @@ const ProjectManager = () => {
     latitude,
     address,
     connected_gateways = [],
+    user,
+    admin,
   } = location.state || {};
 
   const [role, setRole] = useState('')
@@ -135,11 +137,11 @@ const ProjectManager = () => {
   const [expandedGateways, setExpandedGateways] = useState({})
   const { gateway: clickedGateway } = location.state || {}
   const [totalEnergy, setTotalEnergy] = useState('0');
-  const [totalgrid, setTotalgrid] = useState('0');
-  const [totalsolar, setTotalsolar] = useState('0');
-  const [totalgenset, setTotalgenset] = useState('0');
+  const [totalgrid, setGridData] = useState('0');
+  const [totalsolar, setSolarData] = useState('0');
+  const [totalgenset, setGensetData] = useState('0');
   const [totalgride, setTotalgride] = useState('0');
-
+  const [lastUpdateTime, setLastUpdateTime] = useState(null)
   const [grids, setgrids] = useState('0');
   const [solars, setsolars] = useState('0');
   const [gensets, setgensets] = useState('0');
@@ -206,7 +208,9 @@ const ProjectManager = () => {
         image: load,
         image2: fire,
         status: true,
-        power: `${(parseFloat(grids) + parseFloat(solars)).toFixed(2)} kW`,
+            power: `${(
+      parseFloat(grids) + parseFloat(solars) + parseFloat(gensets)
+    ).toFixed(2)} kW`, 
         incomingHandlePosition: 'top',
         outgoingHandlePosition: 'bottom',
       },
@@ -284,7 +288,7 @@ const ProjectManager = () => {
       try {
         const res = await axios.get(urls.Total_activepower(gatewayName));
         const data = res.data;
-  
+        setLastUpdateTime(dayjs())
         const Grid = data.latest_active_power.Grid.total;
         const Generator = data.latest_active_power.Generator.total;
         const Solar = data.latest_active_power.Solar.total;
@@ -292,7 +296,7 @@ const ProjectManager = () => {
         setgrids(Grid.toFixed(2));
         setsolars(Solar.toFixed(2));
         setgensets(Generator.toFixed(2));
-
+        
   
   
       } catch (err) {
@@ -334,126 +338,52 @@ const ProjectManager = () => {
       setRole(user.role || '') // Set role from localStorage
     }
   }, [])
-  // console.log('dropdowm:', selectedGatewayForDropDown)
-  //   Total Energy
-  useEffect(() => {
-    const fetchEnergyForGateways = async () => {
-      if (!clickedGateway || !clickedGateway.gateway_name) return;
 
-      const gatewayName = clickedGateway.gateway_name;
+  
+    useEffect(() => {
+  if (!clickedGateway || !clickedGateway.gateway_name) return;
 
-      try {
-        const response = await axios.get(urls.ep_plus_sum(gatewayName));
-        const energyValue = response.data["EP+_total_sum"] || 0;
-        setTotalEnergy(energyValue.toFixed(2)); // ✅ Set single string value like "3833.21"
-        console.log("EP+ Sum for", gatewayName, ":", energyValue.toFixed(2));
-      } catch (error) {
-        console.error(`Error fetching EP+ Sum for gateway ${gatewayName}:`, error);
-        setTotalEnergy("0.00");
-      }
-    };
+  const gatewayName = clickedGateway.gateway_name;
+  let interval;
 
-    fetchEnergyForGateways(); // Initial call
-    const interval = setInterval(fetchEnergyForGateways, 5000); // Fetch every 5 seconds
+  const fetchLatest = async () => {
+    try {
+      const res = await axios.get(urls.Energy_Summarys(gatewayName));
+      const data = res.data;
 
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [clickedGateway]);
-  // total_Grid
-  useEffect(() => {
-    const fetchgridForGateways = async () => {
-      if (!clickedGateway || !clickedGateway.gateway_name) return;
+      if (!data || data.length === 0) return;
 
-      const gatewayName = clickedGateway.gateway_name;
+      const latest = data[data.length - 1]; // assuming sorted from oldest to newest
 
-      try {
-        const response = await axios.get(urls.grid_import(gatewayName));
-        const gridValue = response.data["EP+_total_sum"] || 0;
-        setTotalgrid(gridValue.toFixed(2)); // ✅ Set single string value like "3833.21"
-        console.log("EP+ Sum for", gatewayName, ":", gridValue.toFixed(2));
-      } catch (error) {
-        console.error(`Error fetching EP+ Sum for gateway ${gatewayName}:`, error);
-        setTotalgrid("0.00");
-      }
-    };
+      const gridVal = latest["Grid_EP+"] || 0;
+      const solarVal = latest["Solar_EP+"] || 0;
+      const gensetVal = latest["Generator_EP+"] || 0;
+      const gridexportVal = latest["Grid_EP-"] || 0;
+      setGridData(gridVal);
+      setSolarData(solarVal);
+      setGensetData(gensetVal);
+      setGensetData(gensetVal);
+      setTotalgride(gridexportVal);
+      const total = (gridVal + solarVal + gensetVal).toFixed(2);
+      setTotalEnergy(total);
 
-    fetchgridForGateways(); // Initial call
-    const interval = setInterval(fetchgridForGateways, 5000); // Fetch every 5 seconds
+      setCurrentValues({
+        Load: gridVal + solarVal + gensetVal,
+        Grid: gridVal,
+        Solar: solarVal,
+        Genset: gensetVal,
+        gride:gridexportVal
+      });
+    } catch (err) {
+      console.error("Failed to fetch latest energy data", err);
+    }
+  };
 
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [clickedGateway]);
-  // Total_Solar
-  useEffect(() => {
-    const fetchsolarForGateways = async () => {
-      if (!clickedGateway || !clickedGateway.gateway_name) return;
+  fetchLatest();
+  interval = setInterval(fetchLatest, 5000);
 
-      const gatewayName = clickedGateway.gateway_name;
-
-      try {
-        const response = await axios.get(urls.solar_import(gatewayName));
-        const solarValue = response.data["Total_Solar"] || 0;
-        setTotalsolar(solarValue.toFixed(2)); // ✅ Set single string value like "3833.21"
-        console.log("EP+ Sum for", gatewayName, ":", solarValue.toFixed(2));
-      } catch (error) {
-        console.error(`Error fetching EP+ Sum for gateway ${gatewayName}:`, error);
-        setTotalsolar("0.00");
-      }
-    };
-
-    fetchsolarForGateways(); // Initial call
-    const interval = setInterval(fetchsolarForGateways, 5000); // Fetch every 5 seconds
-
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [clickedGateway]);
-  //Total Generator
-  useEffect(() => {
-    const fetchgensetForGateways = async () => {
-      if (!clickedGateway || !clickedGateway.gateway_name) return;
-
-      const gatewayName = clickedGateway.gateway_name;
-
-      try {
-        const response = await axios.get(urls.genset_import(gatewayName));
-        const gensetValue = response.data["Total_Genrator"] || 0;
-        setTotalgenset(gensetValue.toFixed(2)); // ✅ Set single string value like "3833.21"
-        console.log("EP+ Sum for", gatewayName, ":", gensetValue.toFixed(2));
-      } catch (error) {
-        console.error(`Error fetching EP+ Sum for gateway ${gatewayName}:`, error);
-        setTotalgenset("0.00");
-      }
-    };
-
-    fetchgensetForGateways(); // Initial call
-    const interval = setInterval(fetchgensetForGateways, 5000); // Fetch every 5 seconds
-
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [clickedGateway]);
-
-  useEffect(() => {
-    const fetchgrideForGateways = async () => {
-
-      if (!clickedGateway || !clickedGateway.gateway_name) return;
-
-      const gatewayName = clickedGateway.gateway_name;
-
-      try {
-
-        const response = await axios.get(urls.grid_export(gatewayName));
-        const grideValue = response.data["EP-_total_sum"] || 0;
-        setTotalgride(grideValue.toFixed(2));
-        console.log("EP+ Sum for", gatewayName, ":", grideValue.toFixed(2));
-      } catch (error) {
-        console.error(`Error fetching EP+ Sum for gateway ${gatewayName}:`, error);
-        setTotalgride("0.00");
-      }
-    };
-
-    fetchgrideForGateways(); // Initial call
-
-    const interval = setInterval(fetchgrideForGateways, 5000); // Repeat every 5 sec
-    return () => clearInterval(interval); // Cleanup on component unmount
-  }, [clickedGateway]);
-
-
+  return () => clearInterval(interval);
+}, [clickedGateway]);
 
   const [selectedGatewayForDropDown, setSelectedGatewayForDropdown] = useState(() => {
     const storedGateways = JSON.parse(localStorage.getItem('selectedGateways')) || {}
@@ -688,24 +618,36 @@ const ProjectManager = () => {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4"
-        >
-          {capitalize(clickedGateway ? clickedGateway.gateway_name : 'Gateway')}
-        </Typography>
-        <Typography variant="body1"
-        >
-          Welcome to gateway {clickedGateway ? clickedGateway.gateway_name : 'Gateway'}
-        </Typography>
-      </Box>
+
+{lastUpdateTime && (
+  <Box 
+    display="flex" 
+    flexDirection="row"            // 👈 row instead of column
+    justifyContent="space-between" // 👈 left & right alignment
+    alignItems="center" 
+    margin="0 1rem"
+  >
+    {/* Left Side */}
+    {role === "superadmin" && (
+      <Typography 
+        variant="body2" 
+        color="text.primary" 
+        sx={{ fontWeight: "bold", fontSize: "1.8rem" }}
+      >
+        {admin} | {user} | {projectName}
+      </Typography>
+    )}
+
+    {/* Right Side */}
+    <Typography variant="body2" color="text.primary">
+      {`Last Update: ${lastUpdateTime.format('YYYY-MM-DD HH:mm:ss')}`}
+    </Typography>
+  </Box>
+)}
+
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
         <GatewayDataCard
-          title={(
-              Number(totalsolar) +
-              Number(totalgenset) +
-              Number(totalgrid) -
-              Number(totalgride)
-            ).toFixed(2) || "0.00"}
+          title={totalEnergy || "0.00"}
           subtitle="Today's Total Energy"
           icon={<img src={Group} alt="Group Icon" />}
           bgColor=" #7978E9
@@ -742,7 +684,7 @@ const ProjectManager = () => {
         {/* Left Box - Project Info */}
 
         <Box
-          p={2}
+             p={2}
           sx={{
             background: theme.palette.background.paper,
             borderRadius: '10px',
@@ -760,32 +702,34 @@ const ProjectManager = () => {
             display="flex"
             flexDirection="column"
             justifyContent="space-around"
-            gap={1}
+         
           >
             <Box>
               <Typography variant="subtitle1" fontWeight={600} color=' #24A58D;'>
-                Project name
+                {projectName}
+                
               </Typography>
               <Typography variant="body2">
-                {projectName}
+                Project name
               </Typography>
             </Box>
 
             <Box>
               <Typography variant="subtitle1" fontWeight={600} color=' #24A58D;'>
-                Gateway name
+                {capitalize(clickedGateway ? clickedGateway.gateway_name : 'Gateway')}
               </Typography>
               <Typography variant="body2">
-                {capitalize(clickedGateway ? clickedGateway.gateway_name : 'Gateway')}
+                Gateway name
               </Typography>
             </Box>
 
             <Box>
               <Typography variant="subtitle1" fontWeight={600}>
-                Mac Address
+                {clickedGateway ? clickedGateway.mac_address : 'Gateway'}
+                
               </Typography>
               <Typography variant="body2">
-                {clickedGateway ? clickedGateway.mac_address : 'Gateway'}
+                Mac Address
               </Typography>
             </Box>
           </Box>
@@ -826,7 +770,7 @@ const ProjectManager = () => {
           sx={{
             flex: '1 1 300px',
             width: { xs: '100%', sm: '50%', md: '50%' },
-            minHeight: 250,
+            minHeight: '319px',
             maxHeight: '60vh',
             overflow: 'hidden',
 
@@ -894,7 +838,7 @@ const ProjectManager = () => {
         <Box
           p={2}
           sx={{
-           maxWidth: '600px',    
+           maxWidth: '100%',    
            flex: '1 1 45%',     
            height: '400px', 
             mt:'15px',
@@ -917,345 +861,271 @@ const ProjectManager = () => {
 
       {/* Responsive Grid Layout */}
 
-      <Grid item xs={12} mt={3}>
-        {/* Right Side: Gateways List */}
-        <Box>
-          <Box sx={{ overflowY: 'auto', overflowX: 'hidden' }}>
-            {dropdownGateways.length > 0 ? (
-              dropdownGateways
-                .filter((gw) => gw.gateway_name === clickedGateway.gateway_name)
-                .map((gw) => (
-                  <Box key={gw.mac_address} sx={{ mb: 1 }}>
-                    {/* Gateway Header */}
+<Grid item xs={12} mt={3}>
+  {/* Right Side: Gateways List */}
+  <Box>
+    <Box sx={{ overflowY: 'auto', overflowX: 'hidden' }}>
+      {dropdownGateways.length > 0 ? (
+        dropdownGateways
+          .filter((gw) => gw.gateway_name === clickedGateway.gateway_name)
+          .map((gw) => (
+            <Box key={gw.mac_address} sx={{ mb: 1 }}>
+              {/* Gateway Header */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                }}
+              >
+                {/* Expanded Content */}
+                <Box sx={{ mt: 1, width: '100%' }}>
+                  {metadataData[gw.gateway_name] ? (
                     <Box
                       sx={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexDirection: 'column',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        flexWrap: 'wrap',
+                        gap: 2,
+                        width: '100%',
                       }}
                     >
-                      {/* Expanded Content */}
-
-                      <Box sx={{ mt: 1, width: '100%' }}>
-                        {/* Gateway Details */}
-
-                        {/* Ports and Analyzers */}
-                        {metadataData[gw.gateway_name] ? (
+                      {metadataData[gw.gateway_name].ports.map((port, portIndex) => (
+                        <Box
+                          key={portIndex}
+                          sx={{
+                            flex: { xs: '1 1 100%', sm: '1 1 280px' },
+                            background: theme.palette.background.paper,
+                            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #ddd',
+                            borderRadius: '12px',
+                            p: 2,
+                            position: 'relative',
+                          }}
+                        >
+                          {/* Port Name Sticker */}
                           <Box
                             sx={{
-                              display: 'flex',
-                              flexDirection: { xs: 'column', sm: 'row' },
-                              justifyContent: 'flex-start',
-                              mt: 2,
-
-                              overflowX: 'none',
-                              width: '100%',
-
+                              position: 'absolute',
+                              top: '-8px',
+                              right: { xs: '0', sm: '-10px' },
+                              background: `linear-gradient(135deg,#E8489E 0%,#E62E8E 20%,#D32999 40%, #A31DB3 60%,#9F1CB5 80%, #8723C1 100%)`,
+                              color: 'white',
+                              fontSize: { xs: '10px', sm: '12px' },
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: '6px',
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            {metadataData[gw.gateway_name].ports.map((port, portIndex) => (
-                              <Box
-                                key={portIndex}
-                                sx={{
-                                  minWidth: { xs: '100%', sm: '280px' },
-                                  background: theme.palette.background.paper,
-                                  boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
-                                  border: '1px solid #ddd',
-                                  borderRadius: '12px',
-                                  p: 2,
-                                  m: { xs: '4px 0', sm: 1 },
-                                  position: 'relative',
-                                }}
-                              >
-                                {/* Port Name Sticker */}
-                                <Box
-                                  sx={{
-                                    position: 'absolute',
-                                    top: '-8px',
+                            {port.port_name}
+                          </Box>
 
-                                    right: { xs: '0px', sm: '-10px' },
-                                    background: `linear-gradient(135deg,#E8489E 0%,#E62E8E 20%,#D32999 40%, #A31DB3 60%,#9F1CB5 80%, #8723C1 100%)`,
-                                    color: 'white',
+                          {/* Analyzer Boxes */}
+                          {port.analyzers.map((analyzer, analyzerIndex) => {
+                            const analyzerKey = `${gw.gateway_name}-${port.port_name}-${analyzer.name}`;
+                            const isExpanded = expandedAnalyzers[analyzerKey] || false;
 
+                            return (
+                              <Box key={analyzerIndex} sx={{ mt: 2, width: '100%' }}>
+                                <TreeBox
+                                  purpose="Analyzer"
+                                  label={
+                                    <Box sx={{ width: '100%' }}>
+                                      {/* Top Row */}
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          flexDirection: { xs: 'column', sm: 'row' },
+                                          justifyContent: 'space-between',
+                                          alignItems: { xs: 'flex-start', sm: 'center' },
+                                          gap: 1,
+                                        }}
+                                      >
+                                        {/* Analyzer Name */}
+                                        <Typography
+                                          variant="subtitle1"
+                                          sx={{
+                                            fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.1rem' },
+                                            fontWeight: 'bold',
+                                            wordBreak: 'break-word',
+                                          }}
+                                        >
+                                          {analyzer.name}
+                                        </Typography>
 
-                                    fontSize: { xs: '10px', sm: '12px' },
-                                    px: 1.5,
-                                    py: 0.5,
-                                    borderRadius: '6px',
-                                  }}
-                                >
-                                  {port.port_name}
-                                </Box>
+                                        {/* Right-side icons */}
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            mt: { xs: 1, sm: 0 },
+                                          }}
+                                        >
+                                          {/* Analyzer Type Icon */}
+                                          {analyzer.type === 'Grid' && (
+                                            <img
+                                              src={isDarkMode ? gridark : 'https://mexemai.com/bucket/ems/image/gridcolor.png'}
+                                              alt="Grid Icon"
+                                              style={{ height: 24, width: 24 }}
+                                            />
+                                          )}
+                                          {analyzer.type === 'Solar' && (
+                                            <img
+                                              src={isDarkMode ? genset : 'https://mexemai.com/bucket/ems/image/solarcolored.png'}
+                                              alt="Solar Icon"
+                                              style={{ height: 24, width: 24 }}
+                                            />
+                                          )}
+                                          {analyzer.type === 'Generator' && (
+                                            <img
+                                              src={isDarkMode ? abcc : 'https://mexemai.com/bucket/ems/image/generator.png'}
+                                              alt="Generator Icon"
+                                              style={{ height: 24, width: 24 }}
+                                            />
+                                          )}
+                                          {analyzer.type === 'other' && (
+                                            <img
+                                              src={isDarkMode ? abcc : 'https://mexemai.com/bucket/ems/image/generator.png'}
+                                              alt="Generator Icon"
+                                              style={{ height: 24, width: 24 }}
+                                            />
+                                          )}
 
-                                {/* ✅ Analyzer Boxes under this Port */}
+                                          {/* Status Dot */}
+                                          <Box
+                                            sx={{
+                                              width: 10,
+                                              height: 10,
+                                              borderRadius: '50%',
+                                              backgroundColor: analyzer.status ? 'green' : 'red',
+                                            }}
+                                          />
 
-                                {port.analyzers.map((analyzer, analyzerIndex) => {
-                                  const analyzerKey = `${gw.gateway_name}-${port.port_name}-${analyzer.name}`
-                                  const isExpanded = expandedAnalyzers[analyzerKey] || false
+                                          {/* Expand Button */}
+                                          <IconButton size="small" sx={{ p: 0 }}>
+                                            {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                                          </IconButton>
+                                        </Box>
+                                      </Box>
 
-                                  return (
-                                    <Box key={analyzerIndex} sx={{ mt: 2, width: '100%' }}>
-                                      <TreeBox
-                                        purpose="Analyzer"
-                                        label={
-                                          <Box sx={{ width: '100%' }}>
-                                          
-                                            {/* Top Row */}
-                                           <Box
-                                                sx={{
-                                                  display: 'flex',
-                                                  justifyContent: 'space-between',
-                                                  alignItems: 'center',
-                                                  width: '100%',
-                                                  gap: 1,
-                                                }}
-                                              >
-                                                {/* Analyzer Name */}
-                                                <Typography
-                                                  variant="subtitle1"
-                                                  sx={{
-                                                    fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.25rem' },
-                                                    fontWeight: 'bold',
-                                                    p: 0,
-                                                  }}
-                                                >
-                                                  {analyzer.name}
-                                                </Typography>
-
-                                                {/* Right-side icons (icon, status, expand button) */}
-                                                <Box
-                                                  sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 1,
-                                                  }}
-                                                >
-                                                  {/* Analyzer Type Icon */}
-                                                  {analyzer.type === 'Grid' && (
-                                                    <img
-                                                      src={
-                                                        isDarkMode
-                                                          ? gridark
-                                                          : 'https://mexemai.com/bucket/ems/image/gridcolor.png'
-                                                      }
-                                                      alt="Grid Icon"
-                                                      style={{ height: 24, width: 24 }}
-                                                    />
-                                                  )}
-                                                  {analyzer.type === 'Solar' && (
-                                                    <img
-                                                      src={
-                                                        isDarkMode
-                                                          ? genset
-                                                          : 'https://mexemai.com/bucket/ems/image/solarcolored.png'
-                                                      }
-                                                      alt="Solar Icon"
-                                                      style={{ height: 24, width: 24 }}
-                                                    />
-                                                  )}
-                                                  {analyzer.type === 'Generator' && (
-                                                    <img
-                                                      src={
-                                                        isDarkMode
-                                                          ? abcc
-                                                          : 'https://mexemai.com/bucket/ems/image/generator.png'
-                                                      }
-                                                      alt="Generator Icon"
-                                                      style={{ height: 24, width: 24 }}
-                                                    />
-                                                  )}
-
-                                                  {/* Status Dot */}
-                                                  <Box
-                                                    sx={{
-                                                      width: 10,
-                                                      height: 10,
-                                                      borderRadius: '50%',
-                                                      backgroundColor: analyzer.status ? 'green' : 'red',
-                                                    }}
-                                                  />
-
-                                                  {/* Expand Button */}
-                                                  <IconButton size="small" sx={{ p: 0 }}>
-                                                    {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                                                  </IconButton>
-                                                </Box>
-                                              </Box>
-
-                                            {/* Bottom Row: First 2 values + Type Icon */}
+                                      {/* Bottom Row: Values in one horizontal line */}
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          gap: 1,
+                                          mt: 1,
+                                          overflowX: 'auto',
+                                          width: '100%',
+                                          pb: 1,
+                                        }}
+                                      >
+                                        {analyzer.values
+                                          .filter((val) =>
+                                            ['EP+', 'EP-','active power', 'Current', 'Volt', 'P.F', 'Freq'].includes(val.name)
+                                          )
+                                          .map((val, idx) => (
                                             <Box
+                                              key={idx}
                                               sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                mt: 1,
-                                                display: 'grid',
-                                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                                gap: 1,
-                                                padding: 1,
+                                                minWidth: '50px',
+                                                textAlign: 'center',
+                                                background: theme.palette.background.default,
+                                                borderRadius: '5px',
+                                                p: 1,
+                                                flexShrink: 0,
                                               }}
                                             >
-                                              {' '}
-                                              {/* Value Fields */}
-                                              {analyzer.values
-                                                .filter(val =>
-                                                  ['active power', 'Current', 'Volt', 'P.F', 'Frequency'].includes(val.name)
-                                                )
-                                                .map((val, idx) => (
-                                                  <Box
-                                                    key={idx}
-                                                    sx={{
-                                                      textAlign: 'center',
-                                                    }}
-                                                  >
-                                                    <Typography
-                                                      variant="body2"
-                                                      sx={{
-                                                        fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                                                       
-                                                      }}
-                                                    >
-                                                      {val.name}
-                                                    </Typography>
-                                                    <Typography
-                                                      variant="body2"
-                                                      sx={{
-                                                        fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                                                        fontWeight: 600,
-                                                     
-                                                      }}
-                                                    >
-                                                      {val.value}
-                                                    </Typography>
-                                                  </Box>
-                                                ))}
-                                         
-                                              {/* Analyzer Type Icon */}
-                                            </Box>
-                                           
-                                              
-
-                                            <hr style={{ width: '100%', marginBottom: '0.5rem' }} />
-
-                                            {isExpanded && (
-                                              <Box
-                                                sx={{
-                                                  p: 1,
-                                                  display: 'flex',
-                                                  flexDirection: 'row',
-                                                  flexWrap: 'wrap',
-                                                  gap: '8px',
-                                                  mt: 1,
-                                                }}
+                                              <Typography
+                                                variant="body2"
+                                                sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
                                               >
-                                                {analyzer.values.map((val, valIndex) => (
-                                                  <Box
-                                                    key={valIndex}
-                                                    sx={{
-                                                      flex: '1 1 45%',
-                                                      minWidth: '120px',
-                                                      p: '5px',
-                                                      background: theme.palette.background.default,
-                                                      borderRadius: '5px',
-                                                      cursor: 'pointer',
-                                                      '&:hover': {
-                                                        transform: 'translateY(-2px)',
-                                                        boxShadow: 2,
-                                                      },
-                                                    }}
-                                                    onClick={() =>
-                                                      navigateToChart(val.name, gw.gateway_name)
-                                                    }
-                                                  >
-                                                    <Grid
-                                                      display="flex"
-                                                      flexDirection="row"
-                                                      columnGap={1}
-                                                    >
-                                                      <Typography
-                                                        variant="subtitle2"
-                                                        display="flex"
-                                                        flexDirection="column"
-                                                      >
-                                                        <Box>
-                                                          <b>Name</b>
-                                                        </Box>
-                                                        <Box>
-                                                          {val.name.trim().split(/\s+/).length >
-                                                            1 ? (
-                                                            // Render as column if more than one word
-                                                            val.name
-                                                              .split(' ')
-                                                              .map((word, idx) => (
-                                                                <div key={idx}>{word}</div>
-                                                              ))
-                                                          ) : (
-                                                            // Render as row (inline text) if one word
-                                                            <span>{val.name}</span>
-                                                          )}
-                                                        </Box>
-                                                      </Typography>
+                                                {val.name}
+                                              </Typography>
+                                              <Typography
+                                                variant="body2"
+                                                sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' }, fontWeight: 600 }}
+                                              >
+                                                {val.value}
+                                              </Typography>
+                                            </Box>
+                                          ))}
+                                      </Box>
 
-                                                      <Divider orientation="vertical" flexItem />
+                                      <hr style={{ width: '100%', margin: '0.5rem 0' }} />
 
-                                                      <Typography
-                                                        variant="subtitle2"
-                                                        display="flex"
-                                                        flexDirection="column"
-                                                      >
-                                                        <Box>
-                                                          <b>Value</b>
-                                                        </Box>
-                                                        <Box>{val.value}</Box>
-                                                      </Typography>
-
-                                                      <Divider orientation="vertical" flexItem />
-
-                                                      <Typography
-                                                        variant="subtitle2"
-                                                        display="flex"
-                                                        flexDirection="column"
-                                                      >
-                                                        <Box>
-                                                          <b>Address</b>
-                                                        </Box>
-                                                        <Box>{val.address}</Box>
-                                                      </Typography>
-                                                    </Grid>
-                                                  </Box>
-                                                ))}
-                                              </Box>
-                                            )}
-                                          </Box>
-                                        }
-                                        onClick={() => toggleAnalyzer(analyzerKey)}
-                                        sx={{
-                                          cursor: 'pointer',
-                                          '&:hover': {
-                                            backgroundColor: theme.palette.action.hover,
-                                          },
-                                        }}
-                                      />
+                                      {/* Expanded Details */}
+                                      {isExpanded && (
+                                        <Box
+                                          sx={{
+                                            p: 1,
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                            flexWrap: 'wrap',
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {analyzer.values.map((val, valIndex) => (
+                                            <Box
+                                              key={valIndex}
+                                              sx={{
+                                                flex: '1 1 45%',
+                                                minWidth: '120px',
+                                                p: '5px',
+                                                background: theme.palette.background.default,
+                                                borderRadius: '5px',
+                                                cursor: 'pointer',
+                                                '&:hover': {
+                                                  transform: 'translateY(-2px)',
+                                                  boxShadow: 2,
+                                                },
+                                              }}
+                                              onClick={() => navigateToChart(val.name, gw.gateway_name)}
+                                            >
+                                              <Grid container columnGap={1}>
+                                                <Typography variant="subtitle2" sx={{ wordBreak: 'break-word' }}>
+                                                  <b>{val.name}</b>
+                                                </Typography>
+                                                <Divider orientation="vertical" flexItem />
+                                                <Typography variant="subtitle2">{val.value}</Typography>
+                                                <Divider orientation="vertical" flexItem />
+                                                <Typography variant="subtitle2">{val.address}</Typography>
+                                              </Grid>
+                                            </Box>
+                                          ))}
+                                        </Box>
+                                      )}
                                     </Box>
-                                  )
-                                })}
+                                  }
+                                  onClick={() => toggleAnalyzer(analyzerKey)}
+                                  sx={{
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                      backgroundColor: theme.palette.action.hover,
+                                    },
+                                  }}
+                                />
                               </Box>
-                            ))}
-                          </Box>
-                        ) : (
-                          <TreeBox label="No metadata available." />
-                        )}
-                      </Box>
+                            );
+                          })}
+                        </Box>
+                      ))}
                     </Box>
-                  </Box>
-                ))
-            ) : (
-              <Typography variant="body2">No gateways available</Typography>
-            )}
-          </Box>
-        </Box>
-      </Grid>
+                  ) : (
+                    <TreeBox label="No metadata available." />
+                  )}
+                </Box>
+              </Box>
+            </Box>
+          ))
+      ) : (
+        <Typography variant="body2">No gateways available</Typography>
+      )}
+    </Box>
+  </Box>
+</Grid>
+
     </Box>
   )
 }

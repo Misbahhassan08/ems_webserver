@@ -11,7 +11,10 @@ const API_Base_url = import.meta.env.VITE_API_BASE_URL || "https://ems-server-53
 
 
 const urls = {
+  
+  Energy_Summarys : (gatewayName) => `${API_Base_url}/Energy_Summary/?gateway=${gatewayName}`,
   getUserProjects: () => `${API_Base_url}/get_project_manager/${getUserIdFromLocalStorage()}/`,
+  getProjects: `${API_Base_url}/get_project_manager/`,
    // Uses helper
    analyzerdata: `${API_Base_url}/selected_analyzer_data/`,
   deleteUser: (userId) => `${API_Base_url}/delete_user/${userId}/`,
@@ -29,21 +32,22 @@ const urls = {
 
   apiPowerData: `${API_Base_url}/api/power-data/`, //create user
   gatewaydata:   `${API_Base_url}/Energy_Summary/`,
-
+  usertotalProjects: `${API_Base_url}/get_user_project_count/`, 
   loginUser: `${API_Base_url}/login_user/`, //for logging in
   createProject: `${API_Base_url}/create_project_manager/`, //project creation
   deleteMultiplleUser: `${API_Base_url}/delete_selected_user/`, //deleting multiple user
   totalProject: `${API_Base_url}/total_project/`, //total project count
-  usertotalProject: `${API_Base_url}/get_user_project_count/${getUserIdFromLocalStorage()}/`, //total project count
+  usertotalProject: `${API_Base_url}/get_user_project_count/${getUserIdFromLocalStorage()}`, //total project count
   get_deployed_gateway_count: `${API_Base_url}/get_deployed_gateway_count/?user_id=${getUserIdFromLocalStorage()}`, // total project count
   fetch_highchart_data: `${API_Base_url}/fetch_highchart_data`,
+  get_deployed_gateway_counting: `${API_Base_url}/get_deployed_gateway_count/`, 
   fetch_single_highchart_data: `${API_Base_url}/fetch_single_highchart_data`,
   fetchActiveProject: `${API_Base_url}/active_project/`, //active project count
   logout: `${API_Base_url}/logout/`, 
   fetchBoxList: `${API_Base_url}/get_boxes/`, //fetching boxes list that are not usedd yet
   gatewayValueData: (gatewayName) =>
     `${API_Base_url}/fetch_value_data/${gatewayName}`,
-  
+  totalProjectcount: `${API_Base_url}/get_user_project_count/`,
   totalGateways: `${API_Base_url}/get_all_gateways/`, //shows all gateway assigned deployed or free
   geUserProjects: (user_id) =>`${API_Base_url}/get_project_manager/${user_id}/`, //getting project of user
   getToalProject: `${API_Base_url}/Get_All_Projects/`, //getting the total project list for admin
@@ -87,7 +91,6 @@ const urls = {
   updateProject: `${API_Base_url}/edit_project_manager/`, 
   ENERGY_API_URL : (gatewayName) => `${API_Base_url}/Total_consumption/?gateway=${gatewayName}`,
 
-  Energy_Summarys : (gatewayName) => `${API_Base_url}/Energy_Summary/?gateway=${gatewayName}`,
   getAnalyzerValuesByGateway: (gateway_name) =>`${API_Base_url}/gateway/${gateway_name}/analyzers/`, //analyzers value for animation and for analyzer box dialog
   getGatewaysForDropdown: `${API_Base_url}/fetch_deployed_gateways_name_mac/`, //deployed gateway name and mac address for dropdown
 };

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@mui/material'
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button, IconButton, Typography, useTheme } from '@mui/material'
 import {
   CContainer,
   CDropdown,
@@ -13,43 +13,61 @@ import {
   CHeaderToggler,
   CNavLink,
   CNavItem,
-  useColorModes,
 } from '@coreui/react'
 import axios from 'axios'
 import CIcon from '@coreui/icons-react'
 import { DarkMode, LightMode, ExitToApp } from '@mui/icons-material'
-import { IconButton, useTheme } from '@mui/material'
 import {
   cilBell,
-  cilContrast,
-  cilEnvelopeOpen,
-  cilList,
   cilMenu,
-  cilMoon,
-  cilSun,
 } from '@coreui/icons'
 import { motion } from 'framer-motion'
 import { AppBreadcrumb } from './index'
 import { AppHeaderDropdown } from './header/index'
 import { ColorModeContext } from '../views/theme/ThemeContext'
-import { useNavigate } from 'react-router-dom'
 import urls from '../urls/urls'
-
+import dayjs from 'dayjs'
+import { useLocation } from 'react-router-dom';
 
 const AppHeader = () => {
   const theme = useTheme()
   const headerRef = useRef()
-  // const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const colorMode = useContext(ColorModeContext)
   const isDarkMode = theme.palette.mode === 'dark'
   const [openLogoutDialog, setOpenLogoutDialog] = React.useState(false)
   const navigate = useNavigate()
+  const [currentTime, setCurrentTime] = React.useState(dayjs())
 
+    const location = useLocation();
+    const project_id = location.state?.projectId || ''
+    const {
+      projectName,
+      projectId,
+      longitude,
+      latitude,
+      address,
+      connected_gateways = [],
+    } = location.state || {};
+  const username = location.state?.username || '';
+  const role = location.state?.role || '';
 
-  const user = JSON.parse(localStorage.getItem('user'))
-  // console.log ("data......",user.firstname)
+  // ⏱ Update real-time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(dayjs())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    document.addEventListener('scroll', () => {
+      headerRef.current &&
+        headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
+    })
+  }, [])
 
   const handleOpenLogoutDialog = () => {
     setOpenLogoutDialog(true)
@@ -65,35 +83,27 @@ const AppHeader = () => {
     localStorage.removeItem('selectedProjectId')
     localStorage.removeItem('selectedGatewayId')
 
-
     try {
-      const token = localStorage.getItem('authToken'); // ✅ Ensure token is included
-  
-      const response = await axios.post(urls.logout, 
-        {}, // ✅ Some APIs require an empty object in the body
+      const token = localStorage.getItem('authToken')
+      const response = await axios.post(
+        urls.logout,
+        {},
         {
           headers: {
-            'Authorization': `Bearer ${token}`, // ✅ Send token if required
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
-          }
+          },
         }
-      );
-  
+      )
+
       if (response.status === 200) {
-        localStorage.removeItem('authToken'); // ✅ Remove token after logout
-        navigate('/login'); // ✅ Redirect to login page
+        localStorage.removeItem('authToken')
+        navigate('/login')
       }
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout failed:', error)
     }
-  };
-
-  useEffect(() => {
-    document.addEventListener('scroll', () => {
-      headerRef.current &&
-        headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
-    })
-  }, [])
+  }
 
   return (
     <CHeader
@@ -109,47 +119,145 @@ const AppHeader = () => {
         >
           <CIcon icon={cilMenu} size="lg" style={{ color: theme.palette.text.TextColor }} />
         </CHeaderToggler>
+
+ {location.pathname === '/dashboard' && (
         <CHeaderNav className="d-none d-md-flex">
           <CNavItem>
-<CNavLink
-  to="/dashboard"
-  as={NavLink}
-  style={{ color: theme.palette.text.TextColor, fontSize: '0.8rem' }}
->
-  {`Welcome ${user.firstname} ${user.lastname} `}
-  {/* {`Welcome ${user.firstname} ${user.lastname} (${user.role})`} */}
-</CNavLink>
-
-          </CNavItem>
-        </CHeaderNav>
-        <CHeaderNav className="ms-auto">
-          <CNavItem>
-            <CNavLink >
-              <CIcon icon={cilBell} size="lg" style={{ color: theme.palette.text.TextColor }} />
+            <CNavLink
+              to="/dashboard"
+              as={NavLink}
+              style={{
+                color: theme.palette.text.TextColor,
+                fontSize: '0.8rem'
+              }}
+            >
+              <span style={{ fontWeight: 'bold' }}>Dashboard</span>
+              <br />
+              Welcome to your dashboard
             </CNavLink>
           </CNavItem>
         </CHeaderNav>
-        <CHeaderNav>
-          <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li>
-          {/* Theme Toggle Button */}
-          <IconButton onClick={colorMode.toggleColorMode}>
-            {isDarkMode ? (
-              <LightMode sx={{ color: theme.palette.text.primary }} />
-            ) : (
-              <DarkMode sx={{ color: theme.palette.text.TextColor }} />
-            )}
-          </IconButton>
-          <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li>
-          {/* ✅ Logout Button Added Below */}
-          <IconButton onClick={handleOpenLogoutDialog}>
-            <ExitToApp sx={{ color: theme.palette.text.TextColor, fontSize: 30 }} />
-          </IconButton>
+      )}
+
+   {location.pathname === '/dashboard/SuperAdminDashboard' && (
+        <CHeaderNav className="d-none d-md-flex">
+          <CNavItem>
+            <CNavLink
+              to="/dashboard/SuperAdminDashboard"
+              as={NavLink}
+              style={{
+                color: theme.palette.text.TextColor,
+                fontSize: '0.8rem'
+              }}
+            >
+              <span style={{ fontWeight: 'bold' }}>Dashboard</span>
+              <br />
+              Welcome to your dashboard
+            </CNavLink>
+          </CNavItem>
         </CHeaderNav>
+      )}
+ {location.pathname === '/dashboard/user_dashboard' && (
+        <CHeaderNav className="d-none d-md-flex">
+          <CNavItem>
+            <CNavLink
+              to="/dashboard/user_dashboard"
+              as={NavLink}
+              style={{
+                color: theme.palette.text.TextColor,
+                fontSize: '0.8rem'
+              }}
+            >
+              <span style={{ fontWeight: 'bold' }}>User ({username})</span>
+              <br />
+              Welcome to your dashboard
+            </CNavLink>
+          </CNavItem>
+        </CHeaderNav>
+      )}
+
+{location.pathname === '/dashboard/project_data' && (
+  <CHeaderNav className="d-none d-md-flex">
+    <CNavItem>
+      <CNavLink
+        to="/dashboard/project_data"
+        as={NavLink}
+        style={{
+          color: theme.palette.text.TextColor,
+          fontSize: '0.8rem'
+        }}
+      >
+        <span style={{ fontWeight: 'bold' }}>
+          Project ({projectName})
+          {role === 'admin' && username ? ` | User (${username})` : ''}
+        </span>
+        <br />
+        Welcome to your dashboard
+      </CNavLink>
+    </CNavItem>
+  </CHeaderNav>
+)}
+
+
+      {location.pathname === '/dashboard/project_manager' && (
+        <CHeaderNav className="d-none d-md-flex">
+          <CNavItem>
+            <CNavLink
+              to="/dashboard/project_manager"
+              as={NavLink}
+              style={{
+                color: theme.palette.text.TextColor,
+                fontSize: '0.8rem'
+              }}
+            >
+              <span style={{ fontWeight: 'bold' }}>Gateway</span>
+              <br />
+              Welcome to your dashboard
+            </CNavLink>
+          </CNavItem>
+        </CHeaderNav>
+      )}
+            
+
+        <CHeaderNav className="ms-auto" style={{ display: 'flex', alignItems: 'center', }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', }}>
+          <Typography variant="body2" color="text.primary">
+            
+            {`Date: ${currentTime.format('YYYY-MM-DD')}`}
+          </Typography>
+          <Typography variant="body2" color="text.primary">
+            
+            {`Time: ${currentTime.format('HH:mm:ss')}`}
+          </Typography>
+        </div>
+
+  <div className="vr h-100 mx-2 text-body text-opacity-75" />
+
+  <IconButton onClick={colorMode.toggleColorMode}>
+    {isDarkMode ? (
+      <LightMode sx={{ color: theme.palette.text.primary }} />
+    ) : (
+      <DarkMode sx={{ color: theme.palette.text.TextColor }} />
+    )}
+  </IconButton>
+
+  <div className="vr h-100 mx-2 text-body text-opacity-75" />
+
+  <IconButton>
+    <CIcon icon={cilBell} size="lg" style={{ color: theme.palette.text.TextColor }} />
+  </IconButton>
+
+  <div className="vr h-100 mx-2 text-body text-opacity-75" />
+
+  <IconButton onClick={handleOpenLogoutDialog}>
+    <ExitToApp sx={{ color: theme.palette.text.TextColor, fontSize: 28 }} />
+  </IconButton>
+</CHeaderNav>
+
+
       </CContainer>
+
+      {/* Logout Dialog */}
       <Dialog
         open={openLogoutDialog}
         onClose={handleCloseLogoutDialog}
@@ -165,7 +273,7 @@ const AppHeader = () => {
                 borderRadius: '12px',
                 padding: '10px',
                 boxShadow: '0px 5px 15px rgba(0,0,0,0.2)',
-                background: theme.palette.background.default
+                background: theme.palette.background.default,
               }}
             >
               {props.children}
@@ -173,8 +281,10 @@ const AppHeader = () => {
           </motion.div>
         )}
       >
-        <DialogTitle sx={{  textAlign: 'center' }}>Logout</DialogTitle>
-        <DialogContent sx={{ textAlign: 'center', fontSize: '16px', color: theme.palette.text.TextColor }}>
+        <DialogTitle sx={{ textAlign: 'center' }}>Logout</DialogTitle>
+        <DialogContent
+          sx={{ textAlign: 'center', fontSize: '16px', color: theme.palette.text.TextColor }}
+        >
           Are you sure you want to logout?
         </DialogContent>
         <DialogActions
@@ -207,6 +317,3 @@ const AppHeader = () => {
 }
 
 export default AppHeader
-{
-  /* <AppHeaderDropdown /> */
-}

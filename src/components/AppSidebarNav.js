@@ -15,7 +15,6 @@ export const AppSidebarNav = ({ items }) => {
           ? icon
           : indent && (
               <span className="nav-icon">
-               
               </span>
             )}
         {name && name}
@@ -38,6 +37,8 @@ export const AppSidebarNav = ({ items }) => {
             {...(rest.to && { as: NavLink })}
             {...(rest.href && { target: '_blank', rel: 'noopener noreferrer' })}
             {...rest}
+            // Apply active link class when current route matches
+            className={({ isActive }) => (isActive ? 'active-link' : '')}
           >
             {navLink(name, icon, badge, indent)}
           </CNavLink>

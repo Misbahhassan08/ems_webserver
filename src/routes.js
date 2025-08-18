@@ -23,6 +23,7 @@ const UserDetails = React.lazy(() => import ('./views/dashboard/UserDetails.js')
 const DashBoard = React.lazy(() => import('./views/dashboard/SuperAdminDashboard.js'))
 const ProjectManager = React.lazy(() => import ('./views/dashboard/project_manager'))
 const ProjectData = React.lazy(() => import ('./views/dashboard/project_data'))
+const user_dashboard = React.lazy(() => import ('./views/dashboard/user_dashboard.js'))
 const GatewayData = React.lazy(() => import ('./views/dashboard/gateway_data'))
 const ProjectChart = React.lazy (() => import ('./views/dashboard/projectchart'))
 const HighChart = React.lazy (() => import ('./views/dashboard/highchart'))
@@ -88,7 +89,8 @@ const routes = [
   { path: '/dashboard/manage_projects', name : "ManageProjects", element: ManageProjects },
   { path: '/dashboard/projectReporting', name : "projectReporting", element: ReportingDropdown },
   { path: '/dashboard/pergateway', name : "pergateway", element: Pergateway },
-  { path: '/dashboard/analyzerReporting', name : "analyzerReporting", element: AnalyzerReporting }
+  { path: '/dashboard/analyzerReporting', name : "analyzerReporting", element: AnalyzerReporting },
+  { path: '/dashboard/user_dashboard', name : "userproject", element: user_dashboard }
 
 
 

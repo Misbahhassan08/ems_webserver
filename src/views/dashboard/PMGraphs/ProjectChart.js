@@ -14,13 +14,13 @@ function ProjectChart() {
   const { projectId: paramProjectId = "1" } = useParams();
   const location = useLocation();
   const [chartData, setChartData] = useState([]);
-  const [startDate, setStartDate] = useState(dayjs().subtract(6, "day"));
+  const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [unit, setUnit] = useState("kWh");
   const [downloadFormat, setDownloadFormat] = useState("png");
   const chartWrapperRef = useRef(null);
 
-  const project_id = location.state?.projectId || paramProjectId;
+  const project_id = location.state?.projectId;
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -78,15 +78,34 @@ function ProjectChart() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div>
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", alignItems: "center" }}>
-          <DatePicker label="Start Date" value={startDate} onChange={setStartDate} />
-          <DatePicker label="End Date" value={endDate} onChange={setEndDate} />
+      <div style={{ padding: "10px", maxWidth: "100%" }}>
+        {/* Responsive controls */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "1rem",
+            marginBottom: "1rem",
+            alignItems: "center",
+          }}
+        >
+          <DatePicker
+            label="Start Date"
+            value={startDate}
+            onChange={setStartDate}
+            sx={{ flex: "1 1 150px", minWidth: "120px" }}
+          />
+          <DatePicker
+            label="End Date"
+            value={endDate}
+            onChange={setEndDate}
+            sx={{ flex: "1 1 150px", minWidth: "120px" }}
+          />
 
           <select
             value={downloadFormat}
             onChange={(e) => setDownloadFormat(e.target.value)}
-            style={{ padding: "8px" }}
+            style={{ padding: "8px", flex: "1 1 100px", minWidth: "80px" }}
           >
             <option value="png">PNG</option>
             <option value="svg">SVG</option>
@@ -94,7 +113,12 @@ function ProjectChart() {
 
           <button
             onClick={handleDownload}
-            style={{ padding: "10px 20px", cursor: "pointer" }}
+            style={{
+              padding: "10px 20px",
+              cursor: "pointer",
+              flex: "1 1 150px",
+              minWidth: "120px",
+            }}
           >
             📥 Download ({downloadFormat.toUpperCase()})
           </button>
@@ -118,6 +142,7 @@ function DailyChart({ title, data, yAxisLabel, chartWrapperRef }) {
     chart: {
       type: "spline",
       backgroundColor: "white",
+      height: "60%", // will auto adjust inside container
     },
     title: { text: title },
     xAxis: {
@@ -139,6 +164,21 @@ function DailyChart({ title, data, yAxisLabel, chartWrapperRef }) {
         marker: { enabled: false },
       },
     },
+    responsive: {
+      rules: [
+        {
+          condition: { maxWidth: 600 },
+          chartOptions: {
+            xAxis: {
+              labels: { rotation: -90, style: { fontSize: "10px" } },
+            },
+            yAxis: {
+              title: { text: "" },
+            },
+          },
+        },
+      ],
+    },
   };
 
   return (
@@ -150,6 +190,7 @@ function DailyChart({ title, data, yAxisLabel, chartWrapperRef }) {
         boxShadow: "0 0 10px rgba(0,0,0,0.1)",
         backgroundColor: "white",
         padding: "10px",
+        width: "100%",
       }}
     >
       <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} />

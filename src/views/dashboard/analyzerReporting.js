@@ -11,7 +11,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import urls from "../../urls/urls"
+import urls from "../../urls/urls";
 
 const ProjectGatewayDropdowns = ({ userId }) => {
   const [projects, setProjects] = useState([]);
@@ -25,6 +25,7 @@ const ProjectGatewayDropdowns = ({ userId }) => {
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [view, setView] = useState('table');
+
   useEffect(() => {
     axios
       .get(urls.getUserProjects())
@@ -35,6 +36,7 @@ const ProjectGatewayDropdowns = ({ userId }) => {
       })
       .catch((err) => console.error('Error fetching project managers:', err));
   }, [userId]);
+
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
     setSelectedProjectId(projectId);
@@ -48,6 +50,7 @@ const ProjectGatewayDropdowns = ({ userId }) => {
       setSelectedKeys([]);
     }
   };
+
   const handleGatewayChange = (e) => {
     const gatewayName = e.target.value;
     setSelectedGatewayName(gatewayName);
@@ -57,12 +60,14 @@ const ProjectGatewayDropdowns = ({ userId }) => {
     setAnalyzerMetadata([]);
     setSelectedKeys([]);
   };
+
   const handleAnalyzerChange = (e) => {
     const analyzerId = e.target.value;
     setSelectedAnalyzerId(analyzerId);
     setAnalyzerMetadata([]);
     setSelectedKeys([]);
   };
+
   const fetchAnalyzerMetadata = () => {
     if (!selectedAnalyzerId || !startDate || !endDate) return;
     axios.get(urls.analyzerdata, {
@@ -77,24 +82,26 @@ const ProjectGatewayDropdowns = ({ userId }) => {
       console.error('Error fetching analyzer metadata:', err);
     });
   };
+
   const allKeys = Array.from(
     new Set(analyzerMetadata.flatMap((meta) => Object.keys(meta.values)))
   );
+
   const handleCheckboxToggle = (key) => {
     setSelectedKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   };
 
-   const downloadCSV = () => {
+  const downloadCSV = () => {
     if (!analyzerMetadata.length || !selectedKeys.length) return;
 
-    const headers = ['Date', ...selectedKeys];
+    const headers = ['Date & Time', ...selectedKeys];
     const csvRows = [headers.join(',')];
 
     analyzerMetadata.forEach((meta) => {
       const row = [
-        dayjs(meta.timestamp).format('YYYY-MM-DD'),
+        dayjs(meta.timestamp).format('YYYY-MM-DD HH:mm:ss'),
         ...selectedKeys.map((key) => meta.values[key] ?? '-')
       ];
       csvRows.push(row.join(','));
@@ -109,13 +116,13 @@ const ProjectGatewayDropdowns = ({ userId }) => {
     URL.revokeObjectURL(url);
   };
 
-
-
   const chartOptions = {
     title: { text: 'Analyzer Data Graph' },
     xAxis: {
-      categories: analyzerMetadata.map(meta => dayjs(meta.timestamp).format('YYYY-MM-DD')),
-      title: { text: 'Date' }
+      categories: analyzerMetadata.map(meta =>
+        dayjs(meta.timestamp).format('YYYY-MM-DD HH:mm:ss')
+      ),
+      title: { text: 'Date & Time' }
     },
     yAxis: {
       title: { text: 'Value' }
@@ -125,6 +132,7 @@ const ProjectGatewayDropdowns = ({ userId }) => {
       data: analyzerMetadata.map((meta) => parseFloat(meta.values[key]) || 0)
     }))
   };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box p={3}>
@@ -147,13 +155,13 @@ const ProjectGatewayDropdowns = ({ userId }) => {
               {analyzers.map((a) => <MenuItem key={a.analyzer_id} value={a.analyzer_id}>{a.name}</MenuItem>)}
             </Select>
           </FormControl>
-       
-        <Box display="flex" gap={2} mb={2} >
-          <DatePicker label="Start Date" value={startDate} onChange={setStartDate} format="YYYY-MM-DD" />
-          <DatePicker label="End Date" value={endDate} onChange={setEndDate} format="YYYY-MM-DD" />
-          <Button variant="contained" onClick={fetchAnalyzerMetadata}>Fetch Data</Button>
+          <Box display="flex" gap={2} mb={2}>
+            <DatePicker label="Start Date" value={startDate} onChange={setStartDate} format="YYYY-MM-DD" />
+            <DatePicker label="End Date" value={endDate} onChange={setEndDate} format="YYYY-MM-DD" />
+            <Button variant="contained" onClick={fetchAnalyzerMetadata}>Fetch Data</Button>
+          </Box>
         </Box>
-         </Box>
+
         {allKeys.length > 0 && (
           <Box display="flex" flexWrap="wrap" gap={2} mb={3}>
             <FormGroup row>
@@ -172,7 +180,8 @@ const ProjectGatewayDropdowns = ({ userId }) => {
             </FormGroup>
           </Box>
         )}
-        <Box mb={3}  display="flex" justifyContent="flex-end">
+
+        <Box mb={3} display="flex" justifyContent="flex-end">
           <ToggleButtonGroup value={view} exclusive onChange={(e, v) => v && setView(v)}>
             <ToggleButton value="table">Table</ToggleButton>
             <ToggleButton value="graph">Graph</ToggleButton>
@@ -185,12 +194,13 @@ const ProjectGatewayDropdowns = ({ userId }) => {
             Download CSV
           </Button>
         </Box>
+
         {view === 'table' && analyzerMetadata.length > 0 && selectedKeys.length > 0 && (
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Date</TableCell>
+                  <TableCell>Date & Time</TableCell>
                   {selectedKeys.map((key) => (
                     <TableCell key={key}>{key}</TableCell>
                   ))}
@@ -199,7 +209,7 @@ const ProjectGatewayDropdowns = ({ userId }) => {
               <TableBody>
                 {analyzerMetadata.map((meta, idx) => (
                   <TableRow key={idx}>
-                    <TableCell>{dayjs(meta.timestamp).format('YYYY-MM-DD')}</TableCell>
+                    <TableCell>{dayjs(meta.timestamp).format('YYYY-MM-DD HH:mm:ss')}</TableCell>
                     {selectedKeys.map((key) => (
                       <TableCell key={key}>{meta.values[key] ?? '-'}</TableCell>
                     ))}
@@ -209,6 +219,7 @@ const ProjectGatewayDropdowns = ({ userId }) => {
             </Table>
           </TableContainer>
         )}
+
         {view === 'graph' && analyzerMetadata.length > 0 && selectedKeys.length > 0 && (
           <HighchartsReact highcharts={Highcharts} options={chartOptions} />
         )}
@@ -216,7 +227,5 @@ const ProjectGatewayDropdowns = ({ userId }) => {
     </LocalizationProvider>
   );
 };
+
 export default ProjectGatewayDropdowns;
-
-
-
