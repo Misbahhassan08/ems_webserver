@@ -137,6 +137,7 @@ const ProjectManager = () => {
   const [expandedGateways, setExpandedGateways] = useState({})
   const { gateway: clickedGateway } = location.state || {}
   const [totalEnergy, setTotalEnergy] = useState('0');
+  const [Energy, setEnergy] = useState('0');
   const [totalgrid, setGridData] = useState('0');
   const [totalsolar, setSolarData] = useState('0');
   const [totalgenset, setGensetData] = useState('0');
@@ -209,9 +210,7 @@ const [nodes, setNodes] = useState([
       image2: fire,
       status: true,
       // 🔑 Show Solar, Grid, Genset, and Total
-      power: `
-        ${totalEnergy} kW
-      `,
+      power: `${Energy} kW`,
       incomingHandlePosition: 'top',
       outgoingHandlePosition: 'bottom',
     },
@@ -243,7 +242,7 @@ const [nodes, setNodes] = useState([
         } else if (node.id === '2') {
           node.data.power = `${grids} kW`;
         } else if (node.id === '3') {
-          node.data.power = `${totalEnergy} kW`;
+          node.data.power = `${Energy} kW`;
         } else if (node.id === '4') {
           node.data.power = `${gensets} kW`;
         }
@@ -298,10 +297,11 @@ const [nodes, setNodes] = useState([
         setgrids(Grid.toFixed(2));
         setsolars(Solar.toFixed(2));
         setgensets(Generator.toFixed(2));
-        const total = (Grid + Solar + Generator).toFixed(2);
-        console.log(Generator);
-      setTotalEnergy(total);
 
+        const total = (Grid + Solar + Generator).toFixed(2);
+      setEnergy(total);
+
+        
         
   
   
@@ -370,10 +370,11 @@ const [nodes, setNodes] = useState([
       setGensetData(gensetVal);
       setGensetData(gensetVal);
       setTotalgride(gridexportVal);
-
+      const total = (gridVal + solarVal + gensetVal).toFixed(2);
+      setTotalEnergy(total);
 
       setCurrentValues({
-      
+        Load: gridVal + solarVal + gensetVal,
         Grid: gridVal,
         Solar: solarVal,
         Genset: gensetVal,
