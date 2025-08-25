@@ -171,66 +171,68 @@ const ProjectManager = () => {
 
   const [edges, setEdges] = useState(initialEdges);
 
-  const [nodes, setNodes] = useState([
-    {
-      id: '1',
-      type: 'circular',
-      data: {
-        label: 'Solar',
-        image: solar,
-        image2: panel2,
-        status: true,
-        power: `${solars} kW`,
-        outgoingHandlePosition: 'bottom',
-        incomingHandlePosition: 'left',
-      },
-      position: { x: 70, y: 25 },
+const [nodes, setNodes] = useState([
+  {
+    id: '1',
+    type: 'circular',
+    data: {
+      label: 'Solar',
+      image: solar,
+      image2: panel2,
+      status: true,
+      power: `${solars} kW`,
+      outgoingHandlePosition: 'bottom',
+      incomingHandlePosition: 'left',
     },
-    {
-      id: '2',
-      type: 'circular',
-      data: {
-        label: 'Grid',
-        image: electricpole,
-        image2: powergrid,
-        status: true,
-        power: `${grids} kW`,
-        outgoingHandlePosition: 'bottom',
-        incomingHandlePosition: 'right',
-      },
-      position: { x: 330, y: 25 },
+    position: { x: 70, y: 25 },
+  },
+  {
+    id: '2',
+    type: 'circular',
+    data: {
+      label: 'Grid',
+      image: electricpole,
+      image2: powergrid,
+      status: true,
+      power: `${grids} kW`,
+      outgoingHandlePosition: 'bottom',
+      incomingHandlePosition: 'right',
     },
-    {
-      id: '3',
-      type: 'circular',
-      data: {
-        label: 'Load',
-        image: load,
-        image2: fire,
-        status: true,
-            power: `${(
-      parseFloat(grids) + parseFloat(solars) + parseFloat(gensets)
-    ).toFixed(2)} kW`, 
-        incomingHandlePosition: 'top',
-        outgoingHandlePosition: 'bottom',
-      },
-      position: { x: 200, y: 180 },
+    position: { x: 330, y: 25 },
+  },
+  {
+    id: '3',
+    type: 'circular',
+    data: {
+      label: 'Load',
+      image: load,
+      image2: fire,
+      status: true,
+      // 🔑 Show Solar, Grid, Genset, and Total
+      power: `
+        ${totalEnergy} kW
+      `,
+      incomingHandlePosition: 'top',
+      outgoingHandlePosition: 'bottom',
     },
-    {
-      id: '4',
-      type: 'circular',
-      data: {
-        label: 'Genset',
-        image: generator,
-        image2: genratorr,
-        status: true,
-        power: `${gensets} kW`,
-        incomingHandlePosition: 'top',
-        outgoingHandlePosition: 'top',
-      },
-      position: { x: 200, y: 330 },
+    position: { x: 200, y: 180 },
+  },
+  {
+    id: '4',
+    type: 'circular',
+    data: {
+      label: 'Genset',
+      image: generator,
+      image2: genratorr,
+      status: true,
+      power: `${gensets} kW`,
+      incomingHandlePosition: 'top',
+      outgoingHandlePosition: 'top',
     },
-  ]);
+    position: { x: 200, y: 330 },
+  },
+]);
+
 
   // Update node power values dynamically
   useEffect(() => {
@@ -241,7 +243,7 @@ const ProjectManager = () => {
         } else if (node.id === '2') {
           node.data.power = `${grids} kW`;
         } else if (node.id === '3') {
-          node.data.power = `${(parseFloat(grids) + parseFloat(solars)).toFixed(2)} kW`;
+          node.data.power = `${totalEnergy} kW`;
         } else if (node.id === '4') {
           node.data.power = `${gensets} kW`;
         }
@@ -296,6 +298,10 @@ const ProjectManager = () => {
         setgrids(Grid.toFixed(2));
         setsolars(Solar.toFixed(2));
         setgensets(Generator.toFixed(2));
+        const total = (Grid + Solar + Generator).toFixed(2);
+        console.log(Generator);
+      setTotalEnergy(total);
+
         
   
   
@@ -364,11 +370,10 @@ const ProjectManager = () => {
       setGensetData(gensetVal);
       setGensetData(gensetVal);
       setTotalgride(gridexportVal);
-      const total = (gridVal + solarVal + gensetVal).toFixed(2);
-      setTotalEnergy(total);
+
 
       setCurrentValues({
-        Load: gridVal + solarVal + gensetVal,
+      
         Grid: gridVal,
         Solar: solarVal,
         Genset: gensetVal,

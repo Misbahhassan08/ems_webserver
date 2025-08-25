@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"; 
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import axios from "axios";
@@ -21,7 +21,7 @@ const GatewayEnergyPerDay = () => {
       const gatewayName = clickedGateway.gateway_name;
       try {
         const response = await axios.get(urls.ENERGY_API_URL(gatewayName));
-        const data = response.data.active_power_last_24_hours;
+        const data = response.data.today_active_power;
 
         const groupByHour = (entries) => {
           const hourlyData = new Array(24).fill(0);
@@ -44,7 +44,7 @@ const GatewayEnergyPerDay = () => {
     };
 
     fetchEnergyData();
-    const interval = setInterval(fetchEnergyData, 10000);
+    const interval = setInterval(fetchEnergyData, 10000); // refresh every 10s
     return () => clearInterval(interval);
   }, [clickedGateway]);
 
@@ -54,7 +54,6 @@ const GatewayEnergyPerDay = () => {
     chart: {
       type: "areaspline",
       height: 300,
-      width: null, // Makes chart responsive
       backgroundColor: "#FFFFFF",
       style: { fontFamily: "Arial, sans-serif" },
     },
@@ -88,17 +87,14 @@ const GatewayEnergyPerDay = () => {
       verticalAlign: "top",
       layout: "horizontal",
       y: 20,
-      symbolHeight: 300,
-      symbolWidth: 50,
-      symbolRadius: 0,
     },
     plotOptions: {
       areaspline: {
         lineWidth: 2,
         marker: {
           enabled: true,
-          symbol: "square",
-          radius: 0,
+          symbol: "circle",
+          radius: 2,
           fillColor: "white",
           lineColor: null,
           lineWidth: 2,
