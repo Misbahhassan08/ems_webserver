@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"; 
+import React, { useEffect, useState } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import axios from "axios";
@@ -23,21 +23,25 @@ const GatewayEnergyPerDay = () => {
         const response = await axios.get(urls.ENERGY_API_URL(gatewayName));
         const data = response.data.today_active_power;
 
-        const groupByHour = (entries) => {
-          const hourlyData = new Array(24).fill(0);
-          entries.forEach((entry) => {
-            const hour = new Date(entry.time).getHours();
-            hourlyData[hour] += entry.value;
-          });
-          return hourlyData.map((v) => parseFloat(v.toFixed(2)));
-        };
+        const formatEntries = (entries) =>
+          (entries || []).map((entry) => ({
+            time: new Date(entry.time).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            value: parseFloat(entry.value.toFixed(2)),
+          }));
 
-        setGridData(groupByHour(data.Grid || []));
-        setSolarData(groupByHour(data.Solar || []));
-        setGensetData(groupByHour(data.Generator || []));
+        const grid = formatEntries(data.Grid);
+        const solar = formatEntries(data.Solar);
+        const genset = formatEntries(data.Generator);
 
-        const hourLabels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-        setCategories(hourLabels);
+        setGridData(grid.map((e) => e.value));
+        setSolarData(solar.map((e) => e.value));
+        setGensetData(genset.map((e) => e.value));
+
+        const allTimes = [...grid, ...solar, ...genset].map((e) => e.time);
+        setCategories(allTimes);
       } catch (error) {
         console.error("Error fetching energy data:", error);
       }
@@ -48,64 +52,97 @@ const GatewayEnergyPerDay = () => {
     return () => clearInterval(interval);
   }, [clickedGateway]);
 
-  const textColor = "#AFB2C1";
+  const textColor = "#4A4A4A";
 
   const options = {
     chart: {
       type: "areaspline",
-      height: 300,
-      backgroundColor: "#FFFFFF",
-      style: { fontFamily: "Arial, sans-serif" },
+      height: 350,
+      backgroundColor: "#fff",
+      style: { fontFamily: "Inter, Arial, sans-serif" },
     },
     title: { text: "" },
     xAxis: {
       categories,
-      title: { text: "Hours", style: { color: textColor } },
-      labels: { style: { color: textColor }, step: 1 },
-      lineColor: textColor,
+      title: { text: "Time", style: { color: textColor, fontSize: "13px" } },
+      labels: { style: { color: textColor, fontSize: "11px" }, step: 2 },
+      lineColor: "#ccc",
     },
     yAxis: {
-      title: { text: "kW", style: { color: textColor } },
-      labels: { style: { color: textColor } },
-      gridLineColor: "#444",
-      gridLineDashStyle: "Dash",
+      title: { text: "kW", style: { color: textColor, fontSize: "13px" } },
+      labels: { style: { color: textColor, fontSize: "11px" } },
+      gridLineColor: "#eee",
     },
     tooltip: {
       shared: true,
-      backgroundColor: "#2A2E4A",
-      borderColor: "#444",
-      style: { color: textColor },
-      headerFormat: "<b>{point.key}</b><table>",
+      useHTML: true,
+      backgroundColor: "#fff",
+      borderRadius: 8,
+      borderColor: "#ccc",
+      shadow: true,
+      style: { color: "#333", fontSize: "12px" },
+      headerFormat: "<b>{point.key}</b><br/>",
       pointFormat:
-        '<tr><td style="padding:0 6px 0 0;">{series.name}:</td>' +
-        '<td style="padding:0"><b>{point.y} kW</b></td></tr>',
-      footerFormat: "</table>",
+        '<span style="color:{series.color}">●</span> {series.name}: <b>{point.y} kW</b><br/>',
     },
     legend: {
-      itemStyle: { color: textColor },
+      itemStyle: { color: textColor, fontWeight: "500" },
       align: "center",
       verticalAlign: "top",
       layout: "horizontal",
-      y: 20,
+      y: 10,
     },
-    plotOptions: {
-      areaspline: {
-        lineWidth: 2,
-        marker: {
-          enabled: true,
-          symbol: "circle",
-          radius: 2,
-          fillColor: "white",
-          lineColor: null,
-          lineWidth: 2,
+plotOptions: {
+  areaspline: {
+    lineWidth: 0.5,   // 👈 thinner line
+    marker: {
+      enabled: true,
+      symbol: "circle",
+      radius: 1,
+      states: { hover: { enabled: true, radius: 6 } },
+    },
+    fillOpacity: 0.3,
+  },
+  series: {
+    animation: { duration: 800 },
+  },
+},
+
+    colors: ["#1E88E5", "#43A047", "#E53935"],
+    series: [
+      {
+        name: "Grid",
+        data: gridData,
+        color: {
+          linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+          stops: [
+            [0, "rgba(30,136,229,0.8)"],
+            [1, "rgba(30,136,229,0.1)"],
+          ],
         },
       },
-    },
-    colors: ["#1F2A40", "#64de1d", "#de1dc8"],
-    series: [
-      { name: "Grid KW", data: gridData },
-      { name: "Solar KW", data: solarData },
-      { name: "Genset KW", data: gensetData },
+      {
+        name: "Solar",
+        data: solarData,
+        color: {
+          linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+          stops: [
+            [0, "rgba(67,160,71,0.8)"],
+            [1, "rgba(67,160,71,0.1)"],
+          ],
+        },
+      },
+      {
+        name: "Genset",
+        data: gensetData,
+        color: {
+          linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+          stops: [
+            [0, "rgba(229,57,53,0.8)"],
+            [1, "rgba(229,57,53,0.1)"],
+          ],
+        },
+      },
     ],
     credits: { enabled: false },
     responsive: {
@@ -113,9 +150,17 @@ const GatewayEnergyPerDay = () => {
         {
           condition: { maxWidth: 600 },
           chartOptions: {
-            legend: { itemStyle: { fontSize: "10px" } },
-            yAxis: { labels: { style: { fontSize: "10px" } } },
-            xAxis: { labels: { style: { fontSize: "10px" } } },
+            chart: { height: 250 },
+            legend: {
+              itemStyle: { fontSize: "10px" },
+            },
+            xAxis: {
+              labels: { style: { fontSize: "9px" } },
+            },
+            yAxis: {
+              labels: { style: { fontSize: "9px" } },
+            },
+            tooltip: { style: { fontSize: "10px" } },
           },
         },
       ],
@@ -125,16 +170,22 @@ const GatewayEnergyPerDay = () => {
   return (
     <div
       style={{
-        padding: 8,
-        borderRadius: 10,
+        padding: 12,
+        borderRadius: 12,
         width: "100%",
-        background: "#FFFFFF",
+        background: "#fff",
         marginBottom: 16,
-        overflow: "hidden",
+        boxShadow: "0px 2px 10px rgba(0,0,0,0.05)",
       }}
     >
-      <Typography variant="subtitle2" fontWeight={600} fontSize={14} mb={1}>
-        Energy Overview (Last 24 Hours)
+      <Typography
+        variant="subtitle2"
+        fontWeight={600}
+        fontSize={15}
+        mb={1}
+        color="#333"
+      >
+        ⚡ Energy Overview (Last 24 Hours)
       </Typography>
       <HighchartsReact
         highcharts={Highcharts}
