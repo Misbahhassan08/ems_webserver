@@ -59,7 +59,7 @@ const GatewayEnergyPerDay = () => {
     title: { text: "" },
     xAxis: {
       type: "datetime",
-      title: { text: "Time", style: { color: textColor, fontSize: "13px" } },
+      title: { text: "Time 24-hour format", style: { color: textColor, fontSize: "13px" } },
       labels: {
         style: { color: textColor, fontSize: "11px" },
         format: "{value:%H}", // show only hours (10, 11, 12…)
