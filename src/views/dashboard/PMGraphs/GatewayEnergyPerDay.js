@@ -170,7 +170,7 @@ const GatewayEnergyPerDay = () => {
         borderRadius: 12,
         width: "100%",
         background: "#fff",
-        marginBottom: 16,
+       
         boxShadow: "0px 2px 10px rgba(0,0,0,0.05)",
       }}
     >
@@ -181,7 +181,7 @@ const GatewayEnergyPerDay = () => {
         mb={1}
         color="#333"
       >
-        ⚡ Energy Overview (Last 24 Hours)
+        ⚡ Energy Overview ( Today)
       </Typography>
       <HighchartsReact
         highcharts={Highcharts}
